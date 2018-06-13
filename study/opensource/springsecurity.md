@@ -28,6 +28,7 @@ TODO详细待展开
   - ConsensusBased 多数投票者通过
   - UnanimousBased 没有投出过拒绝票
 * AccessDecisionVoter 具体针对每类权限的判断vote(Authentication authentication, S object,Collection<ConfigAttribute> attributes)
+  
 ```
 AccessDecisionVoter子类:
 RoleVoter (org.springframework.security.access.vote)
@@ -41,6 +42,7 @@ AbstractAclVoter (org.springframework.security.access.vote)
 PreInvocationAuthorizationAdviceVoter (org.springframework.security.access.prepost)
 
 ```
+
 * SecurityMetadataSource 包含类似role权限信息。可以获取对象关联的权限角色
 * ConfigAttribute 用字符串表示具体权限角色类型。
 * PermissionEvaluator 可以用于类似ACL的细粒度的检查
@@ -104,6 +106,7 @@ HttpStatusEntryPoint (org.springframework.security.web.authentication)
 
 ### 消息执行过程
 * 请求过滤器链。web原始的过滤器链为tomcat的ApplicationFilterChain。里面的springSecurityFilterChain作为web包的DelegatingFilterProxy会代理调用security包的FilterChainProxy。构建VirtualFilterChain调用additionalFilters中的filter。然后继续未完成的原始filter链ApplicationFilterChain。
+
 ```
 chain = {FilterChainProxy$VirtualFilterChain@10122}
  originalChain = {ApplicationFilterChain@10132}
@@ -150,6 +153,7 @@ debug = true
 
 WebSecurityConfiguration 加载安全配置
 具体springSecurityFilterChain()会将所有SecurityConfigurer 加载到WebSecurity中，进行构建
+
 ```
 SecurityConfigurer子类
 SecurityConfigurerAdapter (org.springframework.security.config.annotation)
@@ -215,6 +219,7 @@ GlobalAuthenticationConfigurerAdapter (org.springframework.security.config.annot
     EnableGlobalAuthenticationAutowiredConfigurer in AuthenticationConfiguration (org.springframework.security.config.annotation.authentication.configuration)
 
 ```
+
 ```
 WebSecurityConfigurer子类
 WebSecurityConfigurerAdapter (org.springframework.security.config.annotation.web.configuration)
