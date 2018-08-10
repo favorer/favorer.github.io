@@ -72,3 +72,23 @@ SurvivorRatio|8
 >   * Grant plenty of memory to the young generation.
 >
 >   * Increase the young generation size as you increase the number of processors, because allocation can be parallelized.
+
+## GC类型
+* serial collector 串行。可用 **-XX:+UseParallelGC** 开启。单线程收集。适用于单核机器，或者多核机器小于100MB内存。
+* parallel collector(aka throughput collector) 并行收集器。可用 **-XX:+UseParallelGC** 开启
+   * Parallel compaction 并行压缩 默认开启。可以多线程执行major collections回收。随着-XX:+UseParallelGC开启，若关闭使用 **-XX:-UseParallelOldGC**
+* concurrent collector(targeted to minimize pauses) CMS或G1收集器。重点减少stw暂停，但会降低吞吐量，影响性能。HotSpot VM提供CMS和G1.分别用 **-XX:+UseConcMarkSweepGC**或 **-XX:+UseG1GC** 开启。
+
+>Selecting a Collector
+>Unless your application has rather strict pause time requirements, first run your application and allow the VM to select a collector. If necessary, adjust the heap size to improve performance. If the performance still does not meet your goals, then use the following guidelines as a starting point for selecting a collector.
+>
+>* If the application has a small data set (up to approximately 100 MB), then select the serial collector with the option -XX:+UseSerialGC.
+>
+>* If the application will be run on a single processor and there are no pause time requirements, then let the VM select the collector, or select the serial collector with the option -XX:+UseSerialGC.
+>
+>* If (a) peak application performance is the first priority and (b) there are no pause time requirements or pauses of 1 second or longer are acceptable, then let the VM select the collector, or select the parallel collector with -XX:+UseParallelGC.
+>
+>* If response time is more important than overall throughput and garbage collection pauses must be kept shorter than approximately 1 second, then select the concurrent collector with -XX:+UseConcMarkSweepGC or -XX:+UseG1GC.
+>
+>These guidelines provide only a starting point for selecting a collector because performance is dependent on the size of the heap, the amount of live data maintained by the application, and the number and speed of available processors. Pause times are particularly sensitive to these factors, so the threshold of 1 second mentioned previously is only approximate: the parallel collector will experience pause times longer than 1 second on many data size and hardware combinations; conversely, the concurrent collector may not be able to keep pauses shorter than 1 second on some combinations.
+
