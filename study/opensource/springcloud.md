@@ -23,3 +23,7 @@ https://www.ibm.com/blogs/bluemix/2017/09/distributed-tracing-spring-application
 https://github.com/cwenao/springboot_cwenao
 
 [archaius动态配置](https://blog.csdn.net/liuchuanhong1/article/details/73718483)
+
+
+* [完整实现参考](https://gitee.com/vakinge/jeesuite-apigateway)
+* [jeesuite](http://www.jeesuite.com/)
