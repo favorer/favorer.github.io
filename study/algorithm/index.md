@@ -25,3 +25,6 @@ http://3ms.huawei.com/hi/group/2028451/thread_6839671.html?mapId=8526013&for_sta
 * [限流算法](https://crossoverjie.top/2017/08/11/sbc4/)
 https://www.cnblogs.com/haoxinyue/p/6792309.html
 * [蓄水池抽样算法Reservoir sampling algorithm](https://www.cnblogs.com/python27/p/Reservoir_Sampling_Algorithm.html)
+
+
+* [一致性hash](http://www.xuxueli.com/blog/#/notebook/SKILL/SKILL-%E7%AE%97%E6%B3%95%EF%BC%9A%E4%B8%80%E8%87%B4%E6%80%A7Hash%E7%AE%97%E6%B3%95)
