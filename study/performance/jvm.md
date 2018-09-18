@@ -27,6 +27,45 @@ https://www.oschina.net/news/97873/jep-333-a-scalable-low-latency-garbage-collec
 [HotSpot虚拟机对象探秘](http://www.infoq.com/cn/articles/jvm-hotspot)
 
 ----------
+### gc 结构
+#### gc判断存活
+* 引用计数
+* 根搜索算法
+#### gc基本算法
+* 标记-清除Mark-Clean
+* 拷贝算法Copy
+* 标记-整理算法Mark-Compact
+* 分代收集算法
+#### gc类型
+* 年轻代gc
+  * Serial收集器(复制算法)(串行)
+  * ParNew收集器(复制算法)（并行）
+  * Parallel Scavenge收集器（并行）
+* 年老代gc
+  * Serial Old收集器（标记-整理算法）(串行)
+  * Parallel Old收集器  （使用多线程和“标记－整理”算法）（并行）
+  * CMS收集器(标记-清除)(并发)
+  * G1收集器(虚拟分代)(标记-整理)
+
+gc实现虽然很多，像 **串行、并行、并发、分代**，但是最基本的算法却只有几种：**引用计数、标记-清除算法、拷贝和整理**，其中拷贝和整理算法还是以标记清除为基础的。
+
+名称|分代|算法类型|并行度|性能目标|常用配套使用|
+---|---|---|---|---|---
+Serial|年轻代|复制算法|串行||Serial+SerialOld(client默认), Serial+CMS|
+ParNew|年轻代|复制算法|并行||ParNew+SerialOld ParNew+CMS|
+Parallel Scavenge|年轻代||并行|达到可控吞吐量|PS+Serial Old, PS+Parallel Old|
+||||
+Serial Old|年老代|标记-整理算法|串行||ParNew+Serial Old,  ParNew+Serial Old, Parallel Scavanage+Serial Old cms失败后尝试用Serial Old|
+Parallel Old|年老代||并行|吞吐量|Parallel Scavenge+Parallel Scavenge Old|
+CMS|年老代|标记清除|并行|低停顿|ParNew+CMS
+G1|虚拟分代，年轻年老都有|标记-整理|并行|增量式?|
+
+[JVM学习笔记九 之 GC（对象的生命周期系列）](http://yueyemaitian.iteye.com/blog/1185301)
+[第3章　垃圾收集器与内存分配策略](https://blog.csdn.net/wisgood/article/details/16368551)
+[关于GC参数的问题](http://hllvm.group.iteye.com/group/topic/27629)
+
+
+----
 ### 问题排查工具
 # 1.问题排查
 
@@ -34,6 +73,8 @@ https://www.oschina.net/news/97873/jep-333-a-scalable-low-latency-garbage-collec
 
 - [btrace](https://github.com/btraceio/btrace)
 - [greys](https://github.com/oldmanpushcart/greys-anatomy) 交互式免脚本，比btrace更易用
+- [arthas](https://github.com/alibaba/arthas) Alibaba Java Diagnostic Tool Arthas/Alibaba Java诊断利器Arthas
+
 
 [Java神器Btrace，从入门到熟练小工手册](https://mp.weixin.qq.com/s/4bZ6iSvpqPsjdvkSoFVhrg)
 
@@ -50,6 +91,11 @@ https://www.oschina.net/news/97873/jep-333-a-scalable-low-latency-garbage-collec
 
 - [Java Mission Control](http://www.oracle.com/technetwork/java/javaseproducts/mission-control/index.html) JDK自带Profiler
 - [async-profiler](https://github.com/jvm-profiling-tools/async-profiler) 火焰图生成工具
+
+### 性能工具分析
+* [PerfData](https://www.jianshu.com/p/c784e2535855) jvm统计信息会有一块内存放置，默认mmap映射文件到内存中。jstat等通过DirectByteBuffer直接访问。
+  * [direct 和mappedbuffer pool的区别](https://stackoverflow.com/questions/15657837/what-is-mapped-buffer-pool-direct-buffer-pool-and-how-to-increase-their-size)
+  * [jstat -snap \<pid>](http://rednaxelafx.iteye.com/blog/796343) 展示进程的perf信息
 -----
 ### jvm源码结构
 
