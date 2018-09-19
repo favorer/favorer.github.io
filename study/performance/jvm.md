@@ -28,6 +28,7 @@ https://www.oschina.net/news/97873/jep-333-a-scalable-low-latency-garbage-collec
 
 ----------
 ### gc 结构
+safepoint 待学习？
 #### gc判断存活
 * 引用计数
 * 根搜索算法
@@ -49,21 +50,52 @@ https://www.oschina.net/news/97873/jep-333-a-scalable-low-latency-garbage-collec
 
 gc实现虽然很多，像 **串行、并行、并发、分代**，但是最基本的算法却只有几种：**引用计数、标记-清除算法、拷贝和整理**，其中拷贝和整理算法还是以标记清除为基础的。
 
-名称|分代|算法类型|并行度|性能目标|常用配套使用|
----|---|---|---|---|---
-Serial|年轻代|复制算法|串行||Serial+SerialOld(client默认), Serial+CMS|
-ParNew|年轻代|复制算法|并行||ParNew+SerialOld ParNew+CMS|
-Parallel Scavenge|年轻代||并行|达到可控吞吐量|PS+Serial Old, PS+Parallel Old|
+名称|分代|hotspt gc名称|算法类型|并行度|性能目标|常用配套使用|备注|
+---|---|---|---|---|---|---|---
+Serial|年轻代|Copy|复制算法|串行-单线程||Serial+SerialOld(client默认), Serial+CMS|
+ParNew|年轻代|ParNew|复制算法|并行-多线程||ParNew+SerialOld ParNew+CMS|可以和CMS一起用 "ParNew" does the synchronization needed so that it can run during the concurrent phases of CMS.
+Parallel Scavenge|年轻代|PS Scavenge|复制算法|并行-多线程|达到可控吞吐量|PS+Serial Old, PS+Parallel Old|PS不能和CMS一起用
 ||||
-Serial Old|年老代|标记-整理算法|串行||ParNew+Serial Old,  ParNew+Serial Old, Parallel Scavanage+Serial Old cms失败后尝试用Serial Old|
-Parallel Old|年老代||并行|吞吐量|Parallel Scavenge+Parallel Scavenge Old|
-CMS|年老代|标记清除|并行|低停顿|ParNew+CMS
-G1|虚拟分代，年轻年老都有|标记-整理|并行|增量式?|
+Serial Old|年老代|MarkSweepCompact,  "PS MarkSweep(与PS一起用时，叫这个)"|标记-整理算法mark-sweep-compact|串行-单线程||ParNew+Serial Old,  ParNew+Serial Old, Parallel Scavanage+Serial Old cms失败后尝试用Serial Old|
+Parallel Old|年老代|PS MarkSweep 这个和Serial Old的一样|标记－整理 |并行|吞吐量|Parallel Scavenge+Parallel Scavenge Old|
+CMS|年老代|ConcurrentMarkSweep|标记清除|并行 concurrent mode failure用Serial Old也是串行|低停顿|ParNew+CMS
+G1|虚拟分代，年轻年老都有| G1 Young Generation,  G1 Old Generation|标记-整理|并行|低停顿+增量式||标记整理没有内存碎片问题，精确控制停顿时间
 
-[JVM学习笔记九 之 GC（对象的生命周期系列）](http://yueyemaitian.iteye.com/blog/1185301)
-[第3章　垃圾收集器与内存分配策略](https://blog.csdn.net/wisgood/article/details/16368551)
-[关于GC参数的问题](http://hllvm.group.iteye.com/group/topic/27629)
+* [JVM学习笔记九 之 GC（对象的生命周期系列）](http://yueyemaitian.iteye.com/blog/1185301)
+* [第3章　垃圾收集器与内存分配策略](https://blog.csdn.net/wisgood/article/details/16368551)
+* [关于GC参数的问题，介绍了gc名称](http://hllvm.group.iteye.com/group/topic/27629)
+* [ParNew 和 PSYoungGen 和 DefNew 是一个东西么？](http://hllvm.group.iteye.com/group/topic/37095)
+* [JVM调优——之CMS GC日志分析](https://www.cnblogs.com/onmyway20xx/p/6590603.html)
+* [JVM中的STW和CMS](http://www.cnblogs.com/williamjie/p/9222839.html)
 
+ 实战
+* [gc监控不错：一次JVM报警 Cocurrence Mark Sweep 报警](https://blog.csdn.net/vbaspdelphi/article/details/52859882)
+* [一次线上JVM调优实践，FullGC40次/天到10天一次的优化过程](https://blog.csdn.net/cml_blog/article/details/81057966)
+* [jvm metaspace导致FGC](https://blog.csdn.net/zjwstz/article/details/77478054)
+* [如何避免后台IO高负载造成的长时间JVM GC停顿(转)](https://www.cnblogs.com/williamjie/p/9222836.html)
+* baidu 搜索PSScavenge PSMarkSweep可以看到很多内容
+
+#### Parallel Scavenge收集器
+由于与吞吐量关系密切，Parallel Scavenge收集器也经常被称为“吞吐量优先”收集器。除上述两个参数之外，Parallel Scavenge收集器还有一个参数-XX:+UseAdaptiveSizePolicy值得关注。这是一个开关参数，当这个参数打开之后，就不需要手工指定新生代的大小（-Xmn）、Eden与Survivor区的比例（-XX:SurvivorRatio）、晋升老年代对象年龄（-XX:PretenureSizeThreshold）等细节参数了，虚拟机会根据当前系统的运行情况收集性能监控信息，动态调整这些参数以提供最合适的停顿时间或最大的吞吐量，这种调节方式称为GC自适应的调节策略（GC Ergonomics）。如果读者对于收集器运作原理不太了解，手工优化存在困难的时候，使用Parallel Scavenge收集器配合自适应调节策略，把内存管理的调优任务交给虚拟机去完成将是一个很不错的选择。只需要把基本的内存数据设置好（如-Xmx设置最大堆），然后使用MaxGCPauseMillis参数（更关注最大停顿时间）或GCTimeRatio参数（更关注吞吐量）给虚拟机设立一个优化目标，那具体细节参数的调节工作就由虚拟机完成了。自适应调节策略也是Parallel Scavenge收集器与ParNew收集器的一个重要区别。
+
+#### CMS收集器
+阶段|并行度|是否STW|功能
+---|---|---|---
+初始标记（CMS initial mark）|单线程串行|STW|标记GC Roots能直接关联到的对象
+并发标记（CMS concurrent mark）|多线程并发|和用户线程一起执行|并发搜索，查找存活对象
+重新标记（CMS remark）|多线程并发|STW|修正并发标记时间，存活对象变化的标记
+并发清除（CMS concurrent sweep）|多线程并发|和用户线程一起执行|并发清理不可达对象
+
+* [关于CMS、G1垃圾回收器的重新标记、最终标记疑惑?](https://www.zhihu.com/question/37028283)
+
+缺点：
+* CMS收集器对CPU资源非常敏感。
+* CMS收集器无法处理浮动垃圾（Floating Garbage）：并发清理阶段继续产生浮动垃圾,CMS无法在本次收集中处理掉它们，只好留待下一次GC时再将其清理掉。
+  * 在默认设置下，CMS收集器在老年代使用了68%的空间后就会被激活，这是一个偏保守的设置，如果在应用中老年代增长不是太快，可以适当调高参数-XX:CMSInitiatingOccupancyFraction的值来提高触发百分比，以便降低内存回收次数以获取更好的性能。要是CMS运行期间预留的内存无法满足程序需要，就会出现一次“Concurrent Mode Failure”失败，这时候虚拟机将启动后备预案：临时启用Serial Old收集器来重新进行老年代的垃圾收集，这样停顿时间就很长了。所以说参数-XX:CMSInitiatingOccupancyFraction设置得太高将会很容易导致大量“Concurrent Mode Failure”失败，性能反而降低。
+* 空间碎片问题.
+  解决方式
+  * -XX:+UseCMSCompactAtFullCollectionFull。GC服务之后额外免费附送一个碎片整理过程。空间碎片问题没有了，但停顿时间不得不变长了
+  * -XX: CMSFullGCsBeforeCompaction。执行多少次不压缩的Full GC后，跟着来一次带压缩的。
 
 ----
 ### 问题排查工具
